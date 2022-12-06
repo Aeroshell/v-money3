@@ -7,14 +7,15 @@ import {
 export default function unformat(
   input: string,
   opt: VMoneyOptions = defaults,
+  previousValue: BigNumber | null,
   caller = '',
-): string | number {
+): { output: string | number, prevValue: BigNumber | null } {
   debug(opt, 'utils unformat() - caller', caller);
   debug(opt, 'utils unformat() - input', input);
 
   if (!opt.disableNegative && input === '-') {
     debug(opt, 'utils unformat() - return netagive symbol', input);
-    return input;
+    return { output: input, prevValue: previousValue };
   }
 
   const negative = opt.disableNegative ? '' : (input.indexOf('-') >= 0 ? '-' : '');
@@ -34,12 +35,24 @@ export default function unformat(
   /// min and max must be a valid float or integer
   if (opt.max) {
     if (bigNumber.biggerThan(opt.max)) {
-      bigNumber.setNumber(opt.max);
+      if (opt.maxAutoRound) {
+        bigNumber.setNumber(opt.max);
+      } else {
+        if (previousValue !== null) {
+          bigNumber.setNumber(previousValue.toString());
+        }
+      }
     }
   }
   if (opt.min) {
     if (bigNumber.lessThan(opt.min)) {
-      bigNumber.setNumber(opt.min);
+      if (opt.minAutoRound) {
+        bigNumber.setNumber(opt.min);
+      } else {
+        if (previousValue !== null) {
+          bigNumber.setNumber(previousValue.toString());
+        }
+      }
     }
   }
 
@@ -51,5 +64,5 @@ export default function unformat(
 
   debug(opt, 'utils unformat() - output', output);
 
-  return output;
+  return { output, prevValue: bigNumber };
 }

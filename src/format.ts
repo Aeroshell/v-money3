@@ -2,6 +2,7 @@ import defaults, { VMoneyOptions } from './options';
 import BigNumber from './BigNumber';
 import {
   addThousandSeparator,
+  BigInToFormat,
   debug,
   fixed,
   isValidFloat,
@@ -14,8 +15,9 @@ import {
 export default function format(
   input: string | number | null | undefined,
   opt: VMoneyOptions = defaults,
+  previousValue: BigNumber | null,
   caller = '',
-): string {
+): { output: string, prevValue: BigNumber | null } {
   debug(opt, 'utils format() - caller', caller);
   debug(opt, 'utils format() - input1', input);
 
@@ -30,7 +32,10 @@ export default function format(
   } else if (opt.modelModifiers && opt.modelModifiers.number && isValidInteger(input)) {
     input = Number(input).toFixed(fixed(opt.precision));
   } else if (!opt.disableNegative && input === '-') {
-    return input;
+    if (previousValue === null) {
+      return { output: '', prevValue: previousValue };
+    }
+    return { output: BigInToFormat(previousValue, opt), prevValue: previousValue };
   }
 
   debug(opt, 'utils format() - input2', input);
@@ -59,12 +64,24 @@ export default function format(
   // min and max must be a valid float or integer
   if (opt.max) {
     if (bigNumber.biggerThan(opt.max)) {
-      bigNumber.setNumber(opt.max);
+      if (opt.maxAutoRound) {
+        bigNumber.setNumber(opt.max);
+      } else {
+        if (previousValue !== null) {
+          bigNumber.setNumber(previousValue.toString());
+        }
+      }
     }
   }
   if (opt.min) {
     if (bigNumber.lessThan(opt.min)) {
-      bigNumber.setNumber(opt.min);
+      if (opt.minAutoRound) {
+        bigNumber.setNumber(opt.min);
+      } else {
+        if (previousValue !== null) {
+          bigNumber.setNumber(previousValue.toString());
+        }
+      }
     }
   }
 
@@ -74,7 +91,7 @@ export default function format(
 
   // test if it is zero 0, or 0.0 or 0.00 and so on...
   if ((/^0(\.0+)?$/g).test(currency) && opt.allowBlank) {
-    return '';
+    return { output: '', prevValue: bigNumber };
   }
 
   // eslint-disable-next-line prefer-const
@@ -92,5 +109,5 @@ export default function format(
 
   debug(opt, 'utils format() - output', output);
 
-  return output;
+  return { output, prevValue: bigNumber };
 }

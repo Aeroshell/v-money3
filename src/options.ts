@@ -10,6 +10,8 @@ export interface VMoneyOptions {
   disabled: boolean;
   min: number | string | null;
   max: number | string | null;
+  minAutoRound: boolean;
+  maxAutoRound: boolean;
   allowBlank: boolean;
   minimumNumberOfCharacters: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,6 +33,8 @@ export default {
   disabled: false,
   min: null,
   max: null,
+  minAutoRound: false,
+  maxAutoRound: false,
   allowBlank: false,
   minimumNumberOfCharacters: 0,
   modelModifiers: {

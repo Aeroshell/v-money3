@@ -11,6 +11,8 @@
       disableNegative: props.disableNegative,
       min: props.min,
       max: props.max,
+      maxAutoRound: false,
+      minAutoRound: false,
       allowBlank: props.allowBlank,
       minimumNumberOfCharacters: props.minimumNumberOfCharacters,
       debug: props.debug,
@@ -19,7 +21,7 @@
     }"
     type="tel"
     class="v-money3"
-    :value="formattedValue"
+    :value="formattedValue.output"
     :disabled="props.disabled"
     @change="change"
   />
@@ -43,6 +45,7 @@ import {
   fixed,
   validateRestrictedInput,
 } from './Utils';
+import BigNumber from './BigNumber';
 
 const props = defineProps({
   debug: {
@@ -122,6 +125,14 @@ const props = defineProps({
     type: [Number, String],
     default: () => defaults.min,
   },
+  maxAutoRound: {
+    type: Boolean,
+    default: false,
+  },
+  minAutoRound: {
+    type: Boolean,
+    default: false,
+  },
   allowBlank: {
     type: Boolean,
     default: () => defaults.allowBlank,
@@ -135,6 +146,8 @@ const props = defineProps({
     default: () => defaults.shouldRound,
   },
 });
+
+let previousValue: BigNumber | null = null;
 
 const { modelValue, modelModifiers, masked, precision, shouldRound } =
   toRefs(props);
@@ -153,9 +166,9 @@ if (props.disableNegative || value !== '-') {
     }
   }
 }
-const formattedValue = ref(format(value, props, 'component setup'));
+const formattedValue = ref(format(value, props, previousValue, 'component setup'));
 
-debug(props, 'component setup() - data.formattedValue', formattedValue.value);
+debug(props, 'component setup() - data.formattedValue', formattedValue.value.output);
 
 watch(modelValue, modelValueWatcher);
 function modelValueWatcher(value: string | number | null | undefined): void {
@@ -163,11 +176,14 @@ function modelValueWatcher(value: string | number | null | undefined): void {
   const formatted = format(
     value,
     filterOptRestrictions({ ...props }),
+    previousValue,
     'component watch',
   );
-  if (formatted !== formattedValue.value) {
+  if (formatted.output !== formattedValue.value.output) {
     debug(props, 'component watch() changed -> formatted', formatted);
-    formattedValue.value = formatted;
+    formattedValue.value.output = formatted.output;
+    formattedValue.value.prevValue?.setNumber(formatted.prevValue?.toString() || '0');
+    previousValue = formatted.prevValue || null;
   }
 }
 
@@ -184,8 +200,9 @@ function change(evt: Event) {
     value = unformat(
         value,
         filterOptRestrictions({ ...props }),
+        previousValue,
         'component change',
-    );
+    ).output;
   }
   if (value !== lastValue) {
     lastValue = value;

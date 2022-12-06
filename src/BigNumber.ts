@@ -77,9 +77,19 @@ export default class BigNumber {
     return thisNumber < thatNumber;
   }
 
+  lessOrEqualThan(thatBigNumber: NumberParam | BigNumber): boolean {
+    const [thisNumber, thatNumber] = this.adjustComparisonNumbers(thatBigNumber);
+    return thisNumber <= thatNumber;
+  }
+
   biggerThan(thatBigNumber: NumberParam | BigNumber): boolean {
     const [thisNumber, thatNumber] = this.adjustComparisonNumbers(thatBigNumber);
     return thisNumber > thatNumber;
+  }
+
+  biggerOrEqualThan(thatBigNumber: NumberParam | BigNumber): boolean {
+    const [thisNumber, thatNumber] = this.adjustComparisonNumbers(thatBigNumber);
+    return thisNumber >= thatNumber;
   }
 
   isEqual(thatBigNumber: NumberParam | BigNumber): boolean {
@@ -120,5 +130,9 @@ export default class BigNumber {
     }
 
     return [thisNum, thatNum];
+  }
+
+  reverseSign(): void {
+    this.number = this.number * -1n;
   }
 }

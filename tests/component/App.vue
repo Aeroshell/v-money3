@@ -58,6 +58,8 @@ if (payload && payload.length) {
     disabled: !!get('disabled', false),
     min: get('min', `${Number.MIN_SAFE_INTEGER}`),
     max: get('max', `${Number.MAX_SAFE_INTEGER}`),
+    minAutoRound: false,
+    maxAutoRound: false,
     allowBlank: !!get('allowBlank', false),
     minimumNumberOfCharacters: get('minimumNumberOfCharacters', 0),
     modelModifiers: {

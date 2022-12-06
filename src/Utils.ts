@@ -1,3 +1,4 @@
+import BigNumber from './BigNumber';
 import { VMoneyOptions } from './options';
 
 export const RESTRICTED_CHARACTERS: string[] = ['+', '-']; // and number [0-9]
@@ -131,4 +132,20 @@ export function event(name: string): Event {
 // eslint-disable-next-line @typescript-eslint/no-shadow,@typescript-eslint/explicit-module-boundary-types,@typescript-eslint/no-explicit-any,no-shadow
 export function debug({ debug = false }: VMoneyOptions, ...args: any): void {
   if (debug) console.log(...args);
+}
+
+export function BigInToFormat(previousValue: BigNumber, opt: VMoneyOptions) {
+  const currency = previousValue.toFixed(fixed(opt.precision), opt.shouldRound);
+
+  debug(opt, 'utils format() - bigNumber2', previousValue.toFixed(fixed(opt.precision)));
+  
+  // eslint-disable-next-line prefer-const
+  let [integer, decimal] = currency.split('.');
+  const decimalLength = decimal !== undefined ? decimal.length : 0;
+  integer = integer.padStart(opt.minimumNumberOfCharacters - decimalLength, '0');
+  integer = addThousandSeparator(integer, opt.thousands);
+  const output = opt.prefix
+        + joinIntegerAndDecimal(integer, decimal, opt.decimal)
+        + opt.suffix;
+  return output;
 }

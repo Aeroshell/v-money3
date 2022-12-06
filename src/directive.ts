@@ -7,13 +7,16 @@ import {
   setCursor,
   validateRestrictedOptions,
   event,
+  BigInToFormat,
 } from './Utils';
 import format from './format';
 import unformat from './unformat';
 import defaults, { VMoneyOptions } from './options';
+import BigNumber from './BigNumber';
 
 // this option is used for ALL directive instances
 // let opt: VMoneyOptions = defaults;
+let previousValue: BigNumber | null = null;
 
 const setValue = (el: HTMLInputElement, opt: VMoneyOptions, caller: string) => {
   debug(opt, 'directive setValue() - caller', caller);
@@ -24,9 +27,9 @@ const setValue = (el: HTMLInputElement, opt: VMoneyOptions, caller: string) => {
   }
 
   let positionFromEnd = el.value.length - (el.selectionEnd || 0);
-
-  el.value = format(el.value, opt, caller);
-
+  const formatted = format(el.value, opt, previousValue, caller);
+  el.value = formatted.output;
+  previousValue = formatted.prevValue;
   positionFromEnd = Math.max(positionFromEnd, opt.suffix.length); // right
   positionFromEnd = el.value.length - positionFromEnd;
   positionFromEnd = Math.max(positionFromEnd, opt.prefix.length); // left
@@ -49,22 +52,36 @@ const onKeyDown = (e: KeyboardEvent, opt: VMoneyOptions) => {
   if (opt.allowBlank
       && backspacePressed
       && isAtEndPosition
-      && unformat(el.value, opt, 'directive onkeydown allowBlank') === 0
+      && unformat(el.value, opt, previousValue, 'directive onkeydown allowBlank').output === 0
   ) {
     debug(opt, 'directive onkeydown() - set el.value = ""', el.value);
     el.value = '';
+    previousValue = null;
     el.dispatchEvent(event('change')); // v-model.lazy
   }
 
   debug(opt, 'directive onkeydown() - e.key', e.key);
   if (e.key === '+') {
-    debug(opt, 'directive onkeydown() - unformat el.value', el.value);
-    let number = unformat(el.value, opt, 'directive onkeydown +');
-    if (typeof number === 'string') {
-      number = parseFloat(number);
+    if (previousValue !== null) {
+      const rev = previousValue;
+      if (rev.lessThan(0)) {
+        rev.reverseSign()
+        el.value = BigInToFormat(rev, opt)
+        previousValue = rev;
+      } else {
+        el.value = BigInToFormat(previousValue, opt)
+      }
     }
-    if (number < 0) {
-      el.value = String(number * -1);
+  } else if (e.key === '-') {
+    if (previousValue !== null) {
+      const rev = previousValue;
+      if (rev.biggerOrEqualThan(0)) {
+        rev.reverseSign()
+        el.value = BigInToFormat(rev, opt)
+        previousValue = rev;
+      } else {
+        el.value = BigInToFormat(previousValue, opt)
+      }
     }
   }
 };
